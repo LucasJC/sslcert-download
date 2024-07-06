@@ -1,0 +1,72 @@
+name: sslcert-downloader - GraalVM Native Image builds
+on:
+  push:
+    tags:        
+      - '*'
+permissions:
+  contents: write
+jobs:
+          
+  build:
+    name: Build job on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '22'
+          distribution: 'graalvm'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Gradle execution permissions
+        run: chmod +x ./gradlew
+
+      - name: Execute Gradle build
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: nativeCompile
+  
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: sslcert-download-${{ matrix.os }}
+          path: build/native/nativeCompile/sslcert-download*
+
+  upload_artifacts:
+      name: Update release
+      needs: build
+      runs-on: ubuntu-latest
+      steps:
+      
+      - name: Download all artifacts
+        id: download
+        uses: actions/download-artifact@v3
+        with:
+          path: ./artifacts/*
+      
+      - run: ls -hlrt ./artifacts
+      
+      - run: |
+          cp artifacts/macos-latest/sslcert-download artifacts/sslcert-download-macos
+          cp artifacts/windows-latest/sslcert-download artifacts/sslcert-download-windows.exe
+          cp artifacts/ubuntu-latest/sslcert-download artifacts/sslcert-download-ubuntu
+          
+      - run: ls -hlrt ./artifacts
+    
+      - name: Release
+        uses: softprops/action-gh-release@v0.1.15
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ${{github.workspace}}/artifacts/*
+          tag_name: ${{ github.ref }}
+          
