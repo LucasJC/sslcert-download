@@ -51,14 +51,15 @@ jobs:
         id: download
         uses: actions/download-artifact@v3
         with:
-          path: ./artifacts/*
+          path: ./downloaded
       
-      - run: ls -hlrt ./artifacts
+      - run: find ./downloaded
       
       - run: |
-          cp artifacts/macos-latest/sslcert-download artifacts/sslcert-download-macos
-          cp artifacts/windows-latest/sslcert-download artifacts/sslcert-download-windows.exe
-          cp artifacts/ubuntu-latest/sslcert-download artifacts/sslcert-download-ubuntu
+          mkdir artifacts
+          cp downloaded/sslcert-download-macos-latest/sslcert-download artifacts/sslcert-download-macos
+          cp downloaded/sslcert-download-windows-latest/sslcert-download.exe artifacts/sslcert-download-windows.exe
+          cp downloaded/sslcert-download-ubuntu-latest/sslcert-download artifacts/sslcert-download-ubuntu
           
       - run: ls -hlrt ./artifacts
     
